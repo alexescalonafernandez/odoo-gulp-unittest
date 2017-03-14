@@ -1,0 +1,17 @@
+// Coloque su configuración en este archivo para sobrescribir la configuración predeterminada y de usuario.
+{
+    // Configurar patrones globales para excluir archivos y carpetas.
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/*.pyc": true,
+        "package.json": true,
+        "gulpfile.js": true,
+        "node_modules": true,
+        "module_update_tests": true,
+        "test_report": true,
+        "dist": true
+    }
+}
