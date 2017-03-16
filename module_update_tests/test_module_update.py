@@ -17,7 +17,7 @@ class TestModuleUpdate(unittest.TestCase):
         super(TestModuleUpdate, self).setUp()
 
     def test_module_update(self):
-        module_name = utils.get_module_metadata()['name']
+        module_name = os.path.basename(utils.get_module_path())
         props = utils.get_openerp_server_conf()
         try:
             utils.run_odoo_server(['-d', props['db_name'], '-u', module_name, '-r', props['db_user'], '-w', props['db_password'], 

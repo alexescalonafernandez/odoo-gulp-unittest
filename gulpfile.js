@@ -22,7 +22,7 @@ var Table = require('cli-table2'); //show data in table format in shell
 
 //GLOBAL VARIABLES
 var json = JSON.parse(fs.readFileSync('./package.json'));
-var moduleName = json.name;
+var moduleName = path.basename(__dirname);
 
 var moduleUpdateTestFolderName = 'module_update_tests';
 var moduleUpdateTestFolder = path.join(__dirname, moduleUpdateTestFolderName);
