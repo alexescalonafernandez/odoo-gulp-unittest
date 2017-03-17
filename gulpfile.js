@@ -21,7 +21,7 @@ var htmlparser = require("htmlparser2"); //for parsing html files
 var Table = require('cli-table2'); //show data in table format in shell
 
 //GLOBAL VARIABLES
-var json = JSON.parse(fs.readFileSync('./package.json'));
+var npmPackageJson = JSON.parse(fs.readFileSync('./package.json'));
 var moduleName = path.basename(__dirname);
 
 var moduleUpdateTestFolderName = 'module_update_tests';
@@ -33,7 +33,7 @@ var testReportFolder = path.join(__dirname, testReportFolderName);
 var htmlTestIndexReportFilename = 'index.html';
 var htmlTestModuleUpdateProcessReportFilename = format('module_update({0}).html', moduleName);
 var htmlTestModuleReportFilename = format('{0}.html', moduleName);
-var openerpServerConfigFilename = 'openerp_server_conf.json';
+var moduleUnitTestConfigFilename = 'unit_test_config.json';
 
 var htmlTestIndexReportFile = path.join(testReportFolderName, htmlTestIndexReportFilename);
 var htmlTestModuleUpdateProcessReportFile = path.join(testReportFolderName, htmlTestModuleUpdateProcessReportFilename);
@@ -90,7 +90,7 @@ var buildFolder = 'dist';
 var openerpServerProps = {};
 var odooInstalationFolders = [];
 var availableDatabaseNames = [];
-var moduleOpenerpServerConfigData = {};
+var moduleUnitTestConfigData = {};
 
 //PUBLIC GULP TASKS
 gulp.task('default', function(done) {
@@ -114,9 +114,9 @@ gulp.task('create-default-html-report-files', function(done) {
     done();
 });
 
-gulp.task('create-module-openerp-server-config-file', function(done) {
+gulp.task('create-module-unit-test-config-file', function(done) {
     var taskName = this.seq[0];
-    var filePath = path.join(moduleUpdateTestFolder, openerpServerConfigFilename);
+    var filePath = path.join(moduleUpdateTestFolder, moduleUnitTestConfigFilename);
     if (fs.existsSync(filePath)) {
         var questions = [{
             type: 'confirm',
@@ -137,22 +137,17 @@ gulp.task('create-module-openerp-server-config-file', function(done) {
 
     function createConfigFile() {
         runSequence(
-            ['_read-openerp-server-conf'], ['_select-odoo-database'],
+            ['_read-openerp-server-config'], ['_select-odoo-database'],
             function(err) {
                 if (!err) {
-                    ['db_host', 'db_port', 'db_user', 'db_password'].forEach(function(key) {
-                        setModuleOpenerpServerConfigPropertyValue(key, openerpServerProps.get('options.' + key), taskName);
-                    });
-                    var values = [openerpServerProps.get('options.addons_path'),
-                        htmlTestModuleUpdateProcessReportFile, htmlTestModuleReportFile
-                    ];
-                    ['addons_folder', 'test_module_update_process_report_file', 'test_module_report_file'].forEach(
+                    var values = [htmlTestModuleUpdateProcessReportFile, htmlTestModuleReportFile];
+                    ['test_module_update_process_report_file', 'test_module_report_file'].forEach(
                         function(key) {
-                            setModuleOpenerpServerConfigPropertyValue(key, values.shift().split(path.sep).join('/'), taskName);
+                            setModuleUnitTestConfigPropertyValue(key, values.shift().split(path.sep).join('/'), taskName);
                         }
                     );
 
-                    return newFile(openerpServerConfigFilename, JSON.stringify(moduleOpenerpServerConfigData, undefined, 2))
+                    return newFile(moduleUnitTestConfigFilename, JSON.stringify(moduleUnitTestConfigData, undefined, 2))
                         .pipe(gulp.dest(moduleUpdateTestFolder))
                         .on('end', done);
                 }
@@ -210,7 +205,7 @@ gulp.task('auto-py-compile', function(done) {
 });
 
 gulp.task('auto-test', function(done) {
-    runSequence(['_read-module-openerp-server-config-file'], function(err) {
+    runSequence(['_read-module-unit-test-config-file'], function(err) {
         if (!err) {
             console.log(colors.green('Init Browser Sync for html test report...'));
             browserSync.watch(format('{0}/*.html', testReportFolderName))
@@ -287,7 +282,7 @@ gulp.task('npm-scripts', function(done) {
         type: 'list',
         name: 'script',
         message: format('What {0} you wanna execute?', colors.blue('npm script')),
-        choices: json.scripts ? Object.getOwnPropertyNames(json.scripts).concat([new inquirer.Separator()]) : []
+        choices: npmPackageJson.scripts ? Object.getOwnPropertyNames(npmPackageJson.scripts).concat([new inquirer.Separator()]) : []
     }];
     if (questions[0].choices.length > 0) {
         return inquirer.prompt(questions).then(function(answers) {
@@ -299,19 +294,19 @@ gulp.task('npm-scripts', function(done) {
 });
 
 //PRIVATE GULP TASKS (USED LIKE SUBTASKS, DON'T CALL IT)
-gulp.task('_read-module-openerp-server-config-file', function(done) {
+gulp.task('_read-module-unit-test-config-file', function(done) {
     var taskName = this.seq[0];
-    var filePath = path.join(moduleUpdateTestFolder, openerpServerConfigFilename);
-    var flag = [checkModuleOpenerpServerConfigFile, checkProperties, checkOdooExeFile, checkAddonsFolder]
+    var filePath = path.join(moduleUpdateTestFolder, moduleUnitTestConfigFilename);
+    var flag = [checkUnitTestConfigFile, checkProperties, checkOdooExeFile]
         .reduce(function(valid, fn) {
             return valid ? fn() : false;
         }, true);
 
     if (flag)
         done();
-    else runSequence(['create-module-openerp-server-config-file'], done);
+    else runSequence(['create-module-unit-test-config-file'], done);
 
-    function checkModuleOpenerpServerConfigFile() {
+    function checkUnitTestConfigFile() {
         if (!fs.existsSync(filePath)) {
             console.log(
                 applyFormat(['File {0} not exists.', 'Creating {0} file...'],
@@ -323,8 +318,8 @@ gulp.task('_read-module-openerp-server-config-file', function(done) {
     }
 
     function checkProperties() {
-        moduleOpenerpServerConfigData = JSON.parse(fs.readFileSync(filePath));
-        var notFound = getNotFoundOwnProperties(moduleOpenerpServerConfigData, getModuleOpenerpServerConfigPropertyNames())
+        moduleUnitTestConfigData = JSON.parse(fs.readFileSync(filePath));
+        var notFound = getNotFoundOwnProperties(moduleUnitTestConfigData, getModuleUnitTestConfigPropertyNames())
             .map(function(folder) {
                 return colors.red(folder);
             });
@@ -340,7 +335,7 @@ gulp.task('_read-module-openerp-server-config-file', function(done) {
 
     function checkOdooExeFile() {
         var odooExeFile = path.join(
-            moduleOpenerpServerConfigData.odoo_server_folder.split('/').join(path.sep), odooExeName);
+            moduleUnitTestConfigData.odoo_server_folder.split('/').join(path.sep), odooExeName);
 
         if (!fs.existsSync(odooExeFile)) {
             console.log(
@@ -351,37 +346,9 @@ gulp.task('_read-module-openerp-server-config-file', function(done) {
         }
         return true;
     }
-
-    function checkAddonsFolder() {
-        var folders = moduleOpenerpServerConfigData.addons_folder.split(',')
-            .map(function(data) {
-                var folder = data.trim().split('/').join(path.sep);
-                return folder.endsWith(path.sep) ? folder.slice(0, -1) : folder;
-            });
-        if (folders.filter(function(folder) {
-                return folder == path.dirname(__dirname);
-            }).length == 0) {
-            folders = folders.map(function(folder) { return colors.red(folder); })
-            var property = 'addons_folder';
-            throwPluginError(taskName,
-                applyFormat([
-                        'The module parent folder {0} is not contained in: ', '[ {1} ]',
-                        'which resides on {2} property in {3} file.',
-                        'Add {0} on {2} property in {4} file.',
-                        'Or execute command {5} or command {6} for regenerating {3}.'
-                    ], colors.blue(path.dirname(__dirname)), folders.join(), colors.green(property),
-                    colors.red(filePath.replace(__dirname, '.')),
-                    colors.yellow(
-                        path.join(moduleOpenerpServerConfigData.odoo_server_folder, openerpServerConfigFilename)
-                    ),
-                    colors.green('gulp create-module-openerp-server-config-file'), colors.green('npm run config'))
-            );
-        }
-        return true;
-    }
 });
 
-gulp.task('_read-openerp-server-conf', function(done) {
+gulp.task('_read-openerp-server-config', function(done) {
     var taskName = this.seq[0];
     runSequence(['_get-odoo-instalation-folders'], function(err) {
         if (!err) {
@@ -405,7 +372,7 @@ gulp.task('_read-openerp-server-conf', function(done) {
             }
 
             function setOdooServerFolder(folder) {
-                setModuleOpenerpServerConfigPropertyValue('odoo_server_folder', folder.split(path.sep).join('/'), taskName);
+                setModuleUnitTestConfigPropertyValue('odoo_server_folder', folder.split(path.sep).join('/'), taskName);
                 openerpServerProps = PropertiesReader(path.join(folder, 'openerp-server.conf'));
                 done();
             }
@@ -453,7 +420,7 @@ gulp.task('_select-odoo-database', function(done) {
             }
 
             function selectDatabase(databaseName) {
-                setModuleOpenerpServerConfigPropertyValue('db_name', databaseName, taskName);
+                setModuleUnitTestConfigPropertyValue('db_name', databaseName, taskName);
                 done();
             }
         }
@@ -463,7 +430,7 @@ gulp.task('_select-odoo-database', function(done) {
 gulp.task('_get-available-odoo-databases', function(done) {
     var taskName = this.seq[0];
     if (isOpenerpServerPropsEmpty()) {
-        runSequence(['_read-openerp-server-conf'], getDatabaseNames);
+        runSequence(['_read-openerp-server-config'], getDatabaseNames);
     } else getDatabaseNames();
 
     function getDatabaseNames(err) {
@@ -502,7 +469,7 @@ gulp.task('_get-available-odoo-databases', function(done) {
 
 gulp.task('_execute-odoo-module-testing', function(done) {
     if (isOpenerpServerPropsEmpty()) {
-        runSequence(['_read-module-openerp-server-config-file'], executeOdooModuleTesting);
+        runSequence(['_read-module-unit-test-config-file'], executeOdooModuleTesting);
     } else executeOdooModuleTesting();
 
     function executeOdooModuleTesting(err) {
@@ -517,25 +484,25 @@ gulp.task('_execute-odoo-module-testing', function(done) {
 //UTILS FUNCTIONS
 function executeModuleIntallOrUpdateTask(executeInstall, done) {
     var taskType = executeInstall ? 'install' : 'update';
-    runSequence(['_read-module-openerp-server-config-file'], function(err) {
+    runSequence(['_read-module-unit-test-config-file'], function(err) {
         if (!err) {
-            var args = ["'-d'",
-                "props['db_name']",
+            var args = [
+                "'-c'",
+                "openerp_server_config_file",
+                "'-d'",
+                "database_name",
                 format("'-{0}'", taskType[0]),
                 "module_name",
-                "'-r'",
-                "props['db_user']",
-                "'-w'",
-                "props['db_password']",
-                "'--stop-after-init'",
-                "'--addons-path'",
-                "props['addons_folder']"
+                "'--stop-after-init'"
             ];
             var pythonCommand = [
+                "import os",
                 "import utils",
                 "utils.populate_sys_path()",
-                "module_name = utils.get_module_metadata()['name']",
-                "props = utils.get_openerp_server_conf()",
+                "props = utils.get_module_unit_test_conf()",
+                "module_name = os.path.basename(utils.get_module_path())",
+                "openerp_server_config_file = os.path.join(props['odoo_server_folder'], 'openerp-server.conf')",
+                "database_name = props['db_name']",
                 format("utils.run_odoo_server([{0}])", args.join())
             ].join('; ');
             var command = format(
@@ -553,12 +520,12 @@ function throwPluginError(taskName, msg) {
     });
 }
 
-function setModuleOpenerpServerConfigPropertyValue(property, value, taskName) {
-    if (getModuleOpenerpServerConfigPropertyNames().find(
+function setModuleUnitTestConfigPropertyValue(property, value, taskName) {
+    if (getModuleUnitTestConfigPropertyNames().find(
             function(item) {
                 return item == property;
             })) {
-        moduleOpenerpServerConfigData[property] = value;
+        moduleUnitTestConfigData[property] = value;
     } else throwPluginError(taskName, format('The {0} property name is not valid.', colors.red(property)));
 }
 
@@ -625,11 +592,8 @@ function executeCommandTask(command, title, done) {
     done();
 }
 
-function getModuleOpenerpServerConfigPropertyNames() {
-    return [
-        'odoo_server_folder', 'db_name', 'db_host', 'db_port', 'db_user', 'db_password', 'addons_folder',
-        'test_module_update_process_report_file', 'test_module_report_file'
-    ];
+function getModuleUnitTestConfigPropertyNames() {
+    return ['odoo_server_folder', 'db_name', 'test_module_update_process_report_file', 'test_module_report_file'];
 }
 
 function createFileIfNotExists(fileName, folder, content) {

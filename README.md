@@ -3,7 +3,7 @@ The project **odoo-gulp-unittest** is an **Odoo Scaffolding Template** for _Odoo
 
 Even though Odoo allows us to apply **Unit Testing** on _module_ using the command:
 ```sh
-odoo -d db_name -u module_name -r db_user -w db_password --stop-after-init --test-enable --addons-path "addons_folders"
+odoo -c %odoo_installation_folder%\openerp-server.conf -d db_name -u module_name --stop-after-init --test-enable
 ```
 the _Unit Test reports_ is showed in **text format**, which is _difficult to read_ by the **developer**, since the results of **Unit Tests** are mixed with other **log entries**, and it is also _necessary to read_ the **log entries** to know if the unit tests were executed, since if any of the _xml files_ of the **views have an error** for example, the **Unit Tests are not executed**.
 
@@ -20,7 +20,7 @@ The previously mentioned _functionalities_ are _executed_ through **Gulp Tasks**
 ## odoo-gulp-unittest main Goals
 * **Provides** an **Odoo Project Template**, which can be copied in **%odoo_instalation_folder%\server\openerp\cli\templates** folder.
 * **Override** _Odoo Test Runner implemmentation_ **in runtime**. See [custom_test_runner](/module_update_tests/server_test_runner.py)
-* **Generate** a _configuration json file_ with **db_name**, **db_host**, **db_port**, **db_user**, **db_password**, **addons_folder**, and other _properties_, for executing **intall**/**update**/**testing** module. See [create-module-openerp-server-config-file](/gulpfile.js) **Gulp Task**.
+* **Generate** _unit test configuration json file_ with **odoo_server_folder**, **db_name** and other _properties_, for executing **intall**/**update**/**testing** module. See [create-module-unit-test-config-file](/gulpfile.js) **Gulp Task**.
 * **Compile** _all python_ files. See [compile-all-py](/gulpfile.js) **Gulp Task**.
 * **Execute** _module_ **Unit Tests** with [HTMLTestRunner](http://tungwaiyip.info/software/HTMLTestRunner.html) and _display report summary in shell_. See [test](/gulpfile.js) **Gulp Task**.
 * **Display** _Unit Test_ reports summary in _shell_. See [show-test-report](/gulpfile.js) **Gulp Task**.
@@ -31,7 +31,7 @@ The previously mentioned _functionalities_ are _executed_ through **Gulp Tasks**
 
 ## How use odoo-gulp-unittest
 1. **Download** source code from **this repository** and **copy it** in **%odoo_instalation_folder%\server\openerp\cli\templates** folder. If you **desire** you **can change** the _name of the copied_ folder.
-2. In **%odoo_instalation_folder%\server\openerp-server.conf** **add** a _folder path_ for **storing** your _custom odoo modules_ in **addons_path** _property_ if you had not added it before.
+2. In **%odoo_instalation_folder%\server\openerp-server.conf** _add a folder path_ for **storing** your _custom odoo modules_ in **addons_path** _property_ if you had not added it before.
 3. **Open** _shell_ and **assuming for example** that the _name_ of copied folder in **%odoo_instalation_folder%\server\openerp\cli\templates** is **gulp-test** _execute_:
 ```sh
 cd %my_custom_odoo_modules_path%

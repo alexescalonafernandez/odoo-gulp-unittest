@@ -8,7 +8,7 @@
     },
     "scripts": {
         "postinstall": "gulp create-default-html-report-files & gulp compile-all-py",
-        "config": "gulp create-module-openerp-server-config-file",
+        "config": "gulp create-module-unit-test-config-file",
         "compile": "gulp compile-all-py",
         "test": "gulp test",
         "report": "gulp show-test-report",

@@ -19,6 +19,7 @@ def run_unit_tests(module_name, dbname, position=runs_at_install):
               if any of them failed.
     :rtype: bool
     """
+    _logger.info('CURRENT_MODULE %s running tests.', module_name)
     global current_test
     current_test = module_name
     mods = toExtends.get_test_modules(module_name)
@@ -35,7 +36,7 @@ def run_unit_tests(module_name, dbname, position=runs_at_install):
         
         report_file = os.path.join(
             utils.get_module_path(), 
-            utils.get_openerp_server_conf()['test_module_report_file']
+            utils.get_module_unit_test_conf()['test_module_report_file']
         )
         
         outfile = open(report_file, 'wb')

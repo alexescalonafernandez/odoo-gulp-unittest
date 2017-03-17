@@ -7,7 +7,7 @@ import json
 import utils
 
 utils.populate_sys_path()
-props = utils.get_openerp_server_conf()
+props = utils.get_module_unit_test_conf()
 project_path = utils.get_module_path()
 
 import HTMLTestRunner
