@@ -741,24 +741,26 @@ function PythonHTMLTestRunnerReportParser(htmlFrameReportFile) {
     }
 
     function getTestClassDisplayData(testClass) {
-        var data = [];
-        data.push(_truncateDescription(testClass.td[0].text));
-        for (var i = 1; i < 5; i++)
-            data.push(testClass.td[i].text);
-        return data;
+        return testClass.td.filter(function(value, index) {
+            return index < 5;
+        }).map(function(td, index) {
+            return index == 0 ? _truncateDescription(td.text) : td.text;
+        });
     }
 
     function getTestClassMethodsId(testClass) {
-        var ids = [];
         var regex = /^javascript:showClassDetail\('.(\d+)',(\d+)\)$/;
         var chunks = testClass.td[5].a.href.replace(regex, '$1 $2').split(" ");
         var testClassId = parseInt(chunks[0]);
-        var prefix = testClass.class[0];
-        if (prefix == 'e')
-            prefix = 'f';
-        for (var methodNum = 1, size = parseInt(chunks[1]); methodNum <= size; methodNum++)
-            ids.push(format('{0}t{1}.{2}', prefix, testClassId, methodNum));
-        return ids;
+        return new Array(parseInt(chunks[1])).fill(0).reduce(function(ids, value, index) {
+            return ids.concat(
+                ['p', 'f'].map(function(prefix) {
+                    return format('{0}t{1}.{2}', prefix, testClassId, index + 1);
+                }).filter(function(id) {
+                    return report.testMethods.hasOwnProperty(id);
+                })
+            );
+        }, []);
     }
 
     function getTestClasMethod(methodId) {
@@ -826,11 +828,10 @@ function PythonHTMLTestRunnerShellTableReport() {
     }
 
     function _buildHeadReport() {
-        var merge = [parser.getHeadReportStartTime()]
-            .concat([parser.getHeadReportDuration()]);
-        merge.forEach(function(data) {
-            table.push([colors.yellow(data.key), { colSpan: 4, content: data.value }]);
-        });
+        [parser.getHeadReportStartTime()].concat([parser.getHeadReportDuration()])
+            .forEach(function(data) {
+                table.push([colors.yellow(data.key), { colSpan: 4, content: data.value }]);
+            });
     }
 
     function _buildBodyReportTitle() {
